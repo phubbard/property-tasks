@@ -1,0 +1,23 @@
+{
+  "name": "@property-tasks/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm --prefix ../web run build && wrangler dev",
+    "deploy": "npm --prefix ../web run build && wrangler deploy",
+    "types": "wrangler types",
+    "typecheck": "wrangler types && tsc --noEmit",
+    "pretest": "npm --prefix ../web run build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@property-tasks/shared": "*"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.4",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.12",
+    "wrangler": "^4.151.0"
+  }
+}

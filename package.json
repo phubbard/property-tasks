@@ -1,0 +1,11 @@
+{
+  "name": "property-tasks",
+  "private": true,
+  "workspaces": ["shared", "worker", "web"],
+  "scripts": {
+    "build": "npm run build -w web",
+    "test": "npm test -w shared && npm test -w worker",
+    "dev": "npm run dev -w worker",
+    "typecheck": "npm run typecheck -w shared && npm run typecheck -w worker"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "property-tasks",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "vars": {
+    // Dev-only auth stub: every request is this user. Remove when passkeys land (src/auth.ts).
+    "DEV_USER": "paul"
+  },
+  "assets": {
+    "directory": "../web/dist",
+    "binding": "ASSETS"
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "SPACES", "class_name": "SpaceDO" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SpaceDO"] }],
+  "r2_buckets": [{ "binding": "BLOBS", "bucket_name": "property-tasks-blobs" }],
+  "d1_databases": [
+    { "binding": "IDENTITY", "database_name": "property-tasks-identity", "database_id": "local-dev-placeholder", "migrations_dir": "migrations" }
+  ]
+}

@@ -1,0 +1,16 @@
+/* House B shell: tokens on :root, dark-first with a light override, system fonts, no webfonts. */
+:root {
+  color-scheme: dark light;
+  --bg: #0b0d10; --text: #e8ebef; --muted: #9ca3af; --border: #1f2937;
+  --panel: #111418; --track: #1f2937; --marker: #f97316; --error: #f87171;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #e2e8f0; --text: #0f172a; --muted: #475569; --border: #cbd5e1;
+    --panel: #ffffff; --track: #cbd5e1; --marker: #ea580c; --error: #dc2626;
+  }
+}
+html { background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+body { margin: 0 auto; max-width: 60rem; padding: 1rem; }
+.muted { color: var(--muted); }
+a { color: var(--marker); }

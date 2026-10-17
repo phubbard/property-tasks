@@ -1,0 +1,199 @@
+{
+  "name": "move-subtree",
+  "events": [
+    {
+      "id": "0199c000-0000-7000-8000-000000000001",
+      "spaceId": "space-1",
+      "nodeId": "cabin",
+      "actorId": "paul",
+      "deviceId": "paul-phone",
+      "at": 1760000060000,
+      "type": "node.created",
+      "payload": {
+        "parentId": null,
+        "kind": "container",
+        "title": "Cabin",
+        "sortKey": "a"
+      }
+    },
+    {
+      "id": "0199c000-0000-7000-8000-000000000002",
+      "spaceId": "space-1",
+      "nodeId": "house",
+      "actorId": "paul",
+      "deviceId": "paul-phone",
+      "at": 1760000120000,
+      "type": "node.created",
+      "payload": {
+        "parentId": "cabin",
+        "kind": "container",
+        "title": "Main house",
+        "sortKey": "a"
+      }
+    },
+    {
+      "id": "0199c000-0000-7000-8000-000000000003",
+      "spaceId": "space-1",
+      "nodeId": "barn",
+      "actorId": "paul",
+      "deviceId": "paul-phone",
+      "at": 1760000180000,
+      "type": "node.created",
+      "payload": {
+        "parentId": "cabin",
+        "kind": "container",
+        "title": "Barn",
+        "sortKey": "b"
+      }
+    },
+    {
+      "id": "0199c000-0000-7000-8000-000000000004",
+      "spaceId": "space-1",
+      "nodeId": "bath",
+      "actorId": "paul",
+      "deviceId": "paul-phone",
+      "at": 1760000240000,
+      "type": "node.created",
+      "payload": {
+        "parentId": "house",
+        "kind": "container",
+        "title": "Bathroom",
+        "sortKey": "a"
+      }
+    },
+    {
+      "id": "0199c000-0000-7000-8000-000000000005",
+      "spaceId": "space-1",
+      "nodeId": "ac",
+      "actorId": "paul",
+      "deviceId": "paul-phone",
+      "at": 1760000300000,
+      "type": "node.created",
+      "payload": {
+        "parentId": "bath",
+        "kind": "task",
+        "title": "AC failed",
+        "sortKey": "a"
+      }
+    },
+    {
+      "id": "0199c000-0000-7000-8000-000000000006",
+      "spaceId": "space-1",
+      "nodeId": "bath",
+      "actorId": "wife",
+      "deviceId": "wife-phone",
+      "at": 1760000360000,
+      "type": "node.moved",
+      "payload": {
+        "fromParentId": "house",
+        "toParentId": "barn"
+      }
+    },
+    {
+      "id": "0199c000-0000-7000-8000-000000000007",
+      "spaceId": "space-1",
+      "nodeId": "bath",
+      "actorId": "wife",
+      "deviceId": "wife-phone",
+      "at": 1760000420000,
+      "type": "node.field_changed",
+      "payload": {
+        "field": "title",
+        "before": "Bathroom",
+        "after": "Washroom"
+      }
+    }
+  ],
+  "expected": {
+    "nodes": [
+      {
+        "id": "ac",
+        "parentId": "bath",
+        "kind": "task",
+        "title": "AC failed",
+        "status": "open",
+        "priority": "none",
+        "dueAt": null,
+        "assigneeId": null,
+        "body": null,
+        "sortKey": "a",
+        "createdAt": 1760000300000,
+        "createdBy": "paul",
+        "lastEventAt": 1760000300000,
+        "lastEventBy": "paul",
+        "archivedAt": null
+      },
+      {
+        "id": "barn",
+        "parentId": "cabin",
+        "kind": "container",
+        "title": "Barn",
+        "status": null,
+        "priority": "none",
+        "dueAt": null,
+        "assigneeId": null,
+        "body": null,
+        "sortKey": "b",
+        "createdAt": 1760000180000,
+        "createdBy": "paul",
+        "lastEventAt": 1760000180000,
+        "lastEventBy": "paul",
+        "archivedAt": null
+      },
+      {
+        "id": "bath",
+        "parentId": "barn",
+        "kind": "container",
+        "title": "Washroom",
+        "status": null,
+        "priority": "none",
+        "dueAt": null,
+        "assigneeId": null,
+        "body": null,
+        "sortKey": "a",
+        "createdAt": 1760000240000,
+        "createdBy": "paul",
+        "lastEventAt": 1760000420000,
+        "lastEventBy": "wife",
+        "archivedAt": null
+      },
+      {
+        "id": "cabin",
+        "parentId": null,
+        "kind": "container",
+        "title": "Cabin",
+        "status": null,
+        "priority": "none",
+        "dueAt": null,
+        "assigneeId": null,
+        "body": null,
+        "sortKey": "a",
+        "createdAt": 1760000060000,
+        "createdBy": "paul",
+        "lastEventAt": 1760000060000,
+        "lastEventBy": "paul",
+        "archivedAt": null
+      },
+      {
+        "id": "house",
+        "parentId": "cabin",
+        "kind": "container",
+        "title": "Main house",
+        "status": null,
+        "priority": "none",
+        "dueAt": null,
+        "assigneeId": null,
+        "body": null,
+        "sortKey": "a",
+        "createdAt": 1760000120000,
+        "createdBy": "paul",
+        "lastEventAt": 1760000120000,
+        "lastEventBy": "paul",
+        "archivedAt": null
+      }
+    ],
+    "labels": {},
+    "attachments": [],
+    "members": []
+  }
+}

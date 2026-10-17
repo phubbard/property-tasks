@@ -1,0 +1,109 @@
+{
+  "name": "duplicate-and-retry",
+  "events": [
+    {
+      "id": "0199c000-0000-7000-8000-000000000001",
+      "spaceId": "space-1",
+      "nodeId": "cabin",
+      "actorId": "paul",
+      "deviceId": "paul-phone",
+      "at": 1760000060000,
+      "type": "node.created",
+      "payload": {
+        "parentId": null,
+        "kind": "container",
+        "title": "Cabin",
+        "sortKey": "a"
+      }
+    },
+    {
+      "id": "0199c000-0000-7000-8000-000000000001",
+      "spaceId": "space-1",
+      "nodeId": "cabin",
+      "actorId": "paul",
+      "deviceId": "paul-phone",
+      "at": 1760000060000,
+      "type": "node.created",
+      "payload": {
+        "parentId": null,
+        "kind": "container",
+        "title": "Cabin (retry)",
+        "sortKey": "a"
+      }
+    },
+    {
+      "id": "0199c000-0000-7000-8000-000000000002",
+      "spaceId": "space-1",
+      "nodeId": "cabin",
+      "actorId": "paul",
+      "deviceId": "paul-phone",
+      "at": 1760000120000,
+      "type": "node.field_changed",
+      "payload": {
+        "field": "title",
+        "before": "Cabin",
+        "after": "The cabin"
+      }
+    },
+    {
+      "id": "0199c000-0000-7000-8000-000000000003",
+      "spaceId": "space-1",
+      "nodeId": "cabin",
+      "actorId": "paul",
+      "deviceId": "paul-phone",
+      "at": 1760000180000,
+      "type": "label.added",
+      "payload": {
+        "label": "Location"
+      }
+    },
+    {
+      "id": "0199c000-0000-7000-8000-000000000004",
+      "spaceId": "space-1",
+      "nodeId": "cabin",
+      "actorId": "paul",
+      "deviceId": "paul-phone",
+      "at": 1760000240000,
+      "type": "label.added",
+      "payload": {
+        "label": "Location"
+      }
+    },
+    {
+      "id": "0199c000-0000-7000-8000-000000000005",
+      "spaceId": "space-1",
+      "nodeId": "cabin",
+      "actorId": "paul",
+      "deviceId": "paul-phone",
+      "at": 1760000300000,
+      "type": "label.removed",
+      "payload": {
+        "label": "Location"
+      }
+    }
+  ],
+  "expected": {
+    "nodes": [
+      {
+        "id": "cabin",
+        "parentId": null,
+        "kind": "container",
+        "title": "The cabin",
+        "status": null,
+        "priority": "none",
+        "dueAt": null,
+        "assigneeId": null,
+        "body": null,
+        "sortKey": "a",
+        "createdAt": 1760000060000,
+        "createdBy": "paul",
+        "lastEventAt": 1760000300000,
+        "lastEventBy": "paul",
+        "archivedAt": null
+      }
+    ],
+    "labels": {},
+    "attachments": [],
+    "members": []
+  }
+}
