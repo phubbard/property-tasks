@@ -1,0 +1,14 @@
+// Copy to PropertyTasks.local.xcconfig (gitignored). Comments are //, never #.
+
+DEVELOPMENT_TEAM = NSR65JVW9F
+
+// App Store Connect API key for `make upload-testflight` / `make testflight-notes` (App Manager role).
+// The .p8 lives at ~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8, never in the repo.
+APP_STORE_KEY_ID =
+APP_STORE_ISSUER_ID =
+
+// Admin-role key used only for headless provisioning; leave unset to fall back to Xcode's session.
+SIGNING_KEY_ID =
+
+// Beta groups for external testers; leave unset while the only group is "Internal".
+TESTFLIGHT_GROUPS =

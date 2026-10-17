@@ -74,7 +74,7 @@ Costs of generality, and the chosen answers:
 One table, one blob store, content-addressed.
 
 - `attachments`: id, space_id, node_id, kind (`image`, `video`, `pdf`,
-  `document`, `spreadsheet`, `link`, `other`), mime, filename, byte_size,
+  `document`, `spreadsheet`, `link`, `scan`, `other`), mime, filename, byte_size,
   sha256, width, height, duration, captured_at (from EXIF), caption,
   sort_key, created_at, created_by, removed_at.
 - Blob stored under its sha256 (dedupe for free; the same manual attached to
@@ -314,6 +314,21 @@ What is actually available, ranked by value for this app:
    depth per photo enables measuring in the picture later ("how wide is that
    gap"). Object Capture gives a 3D model of a fixture. High wow, native and
    Apple-only, not v1; the sidecar reserves the fields.
+   **Room dimensions (idea, 2026-10-17).** A RoomPlan scan is an attachment
+   of kind `scan` on the room's container node (JSON plus USDZ, content
+   addressed in R2). Dimensions (width, length, ceiling height, floor area,
+   wall list) are a `derived` record on that attachment with producer and
+   confidence; accepting them onto the room is an ordinary event, so the
+   history says who measured and when, and a re-scan is a second attachment
+   and a second derivation. Detected objects become Fixture suggestions,
+   never auto-created. The room page draws a small floor plan as inline SVG
+   from the wall list; later a task can be pinned to a position in it, and
+   multi-room sessions can lay rooms out relative to each other. Non-LiDAR
+   iPhones, Android and the web get manual width/length/height fields.
+   Accuracy is a few centimetres: fit-a-vanity, not cut-the-trim. Measuring a
+   single object (the AC unit) is the smaller ARKit two-tap raycast feature,
+   stored as a `measurement` derivation on a photo. Native-only, SwiftUI phase.
+
 6. **Audio.** A voice memo with on-device transcription (Speech framework,
    iOS 26 SpeechAnalyzer) is the fastest way to describe a problem, and a
    recording of the noise a failing compressor makes is evidence a photo
@@ -365,8 +380,20 @@ Why SwiftUI multiplatform here:
   That code sits behind `#if os(iOS)` and the Mac build gets the review,
   triage and bulk-edit role, which is what a Mac is for in this app anyway.
 
-Practical plan: one SwiftUI package for the model, sync and views, one Xcode
-target with iPhone, iPad and Mac destinations. Tick "Designed for iPad" on
+Practical plan (started 2026-10-17): `apple/Core` is a local Swift package
+holding the model, projection, filter and sync client, tested with `swift test`
+against `shared/fixtures` so it cannot drift from the TypeScript projection;
+`apple/project.yml` (xcodegen) defines one SwiftUI target with iOS and macOS
+destinations plus a test bundle, and `apple/Makefile` carries the
+Serpentine/mapbook pipeline (gitignored project, local xcconfig for signing,
+git-count build numbers, TestFlight upload and notes). Bundle id
+`net.phfactor.propertytasks`, chosen like a tattoo. The first app has the
+Spaces list, tree and list views with the shared filter, a node page with
+status, priority, labels, children, photos and history, photo attach through
+the photo picker with client-side derivatives and EXIF into the capture
+sidecar, and a JSON-cached offline replica (`SpaceStore`) that queues events
+and reconciles on pull. Camera-first capture, SQLite, OCR and RoomPlan are
+next. Tick "Designed for iPad" on
 day one so the Mac has something, then promote the macOS destination as the
 outline, table and menu commands get their polish. Catalyst stays off the
 table unless a UIKit dependency forces it.

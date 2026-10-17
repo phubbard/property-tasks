@@ -11,7 +11,8 @@ audit log. Web first, then SwiftUI for iPhone, iPad and Mac. Read
 shared/   TypeScript model: event types, projection (applyEvent), filter, fixtures. No runtime deps.
 worker/   Cloudflare Worker: SpaceDO (one Durable Object per Space), API routes, blobs on R2, identity on D1.
 web/      Static assets served by the Worker (CSS, manifest). Pages are rendered by the Worker.
-apple/    (later) Swift package + SwiftUI app; ports shared/ against the same fixtures.
+apple/    Swift: Core package (model, projection, filter, sync client; `swift test` replays shared/fixtures)
+          and the SwiftUI app for iPhone, iPad and native macOS (xcodegen + Makefile, see apple/Makefile).
 ```
 
 ## Run
@@ -94,12 +95,33 @@ Live updates: `GET /api/spaces/<spaceId>/ws?device=<deviceId>` upgrades to a
 WebSocket; the Durable Object sends `{"type":"events","events":[…]}` for
 every batch committed by another device.
 
+## Apple app
+
+Requires Xcode 27 and `brew install xcodegen`. Signing settings live in a gitignored local xcconfig:
+
+```bash
+cd apple
+cp PropertyTasks.local.xcconfig.sample PropertyTasks.local.xcconfig   # team id is pre-filled
+make core-test     # swift test on Core: replays shared/fixtures through the Swift projection
+make build         # iOS Simulator debug build
+make build-mac     # native macOS debug build
+make test          # core tests, then the app test bundle on a simulator
+make run-mac       # launch the Mac app against http://localhost:8787 (Settings changes the server)
+```
+
+The app signs in with the same dev stub as the Worker (Settings → Dev user) until real
+sessions exist. TestFlight targets (`make upload-testflight`, `make upload-testflight-mac`,
+`make testflight-notes`) follow the Serpentine/mapbook pipeline and need App Store Connect key ids
+in the local xcconfig.
+
 ## Tests
 
 - `shared/fixtures/*.json`: event lists with the expected projection.
   Regenerate with `npm run fixtures:regen -w shared` after changing the
   projection on purpose. Any other implementation of the projection (the
   Durable Object's SQL store, the Swift port) must reproduce these.
+- `apple/Core/Tests`: the Swift projection replays the same `shared/fixtures` and must match
+  byte-for-byte after decoding; `apple/PropertyTasksTests` covers the local replica store.
 - `worker/test/space.test.ts`: push/pull round-trip, idempotent retry,
   snapshot equals replay, atomic rejection, membership refusal, blob upload
   with sha verification. Runs inside workerd via `@cloudflare/vitest-plugin`.

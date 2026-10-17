@@ -1,0 +1,15 @@
+// Shared build settings. Per-developer values (signing team, App Store Connect key ids) live in
+// PropertyTasks.local.xcconfig, which is gitignored and included below.
+//
+// First-time setup:
+//   cp PropertyTasks.local.xcconfig.sample PropertyTasks.local.xcconfig
+//
+// `xcodegen generate` rewrites the .xcodeproj from project.yml, wiping anything set in Xcode's
+// Signing & Capabilities UI. Settings from xcconfig survive. Comments are //, never #.
+
+CURRENT_PROJECT_VERSION = 1
+PT_BUILD_DATE = unknown
+PT_GIT_SHA = unknown
+#include? "Build.gen.xcconfig"
+
+#include? "PropertyTasks.local.xcconfig"

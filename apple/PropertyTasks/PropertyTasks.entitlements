@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- macOS sandbox; iOS ignores these. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- The Worker is the only network peer; a sandboxed Mac app has no network without this. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- Photo picker on macOS hands over files the user chose. -->
+	<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>
+</dict>
+</plist>
