@@ -9,7 +9,8 @@ struct NodeView: View {
     @State private var newLabel = ""
     @State private var creatingChild = false
     @State private var pickerItem: PhotosPickerItem?
-    @State private var uploading = false
+    @State private var attaching = false
+    @State private var showingCamera = false
 
     var body: some View {
         let _ = store.version
@@ -55,6 +56,14 @@ struct NodeView: View {
                                 VStack(spacing: 2) {
                                     BlobImage(store: store, sha256: a.sha256, variant: "thumb")
                                         .frame(width: 96, height: 96).clipShape(RoundedRectangle(cornerRadius: 8))
+                                        .overlay(alignment: .bottomTrailing) {
+                                            if store.isUploadPending(sha256: a.sha256) {
+                                                Image(systemName: "icloud.and.arrow.up")
+                                                    .font(.caption2).padding(4)
+                                                    .background(.ultraThinMaterial, in: Circle()).padding(4)
+                                                    .accessibilityLabel("Upload pending")
+                                            }
+                                        }
                                     if !a.caption.isEmpty { Text(a.caption).font(.caption2).lineLimit(1) }
                                 }
                                 .contextMenu {
@@ -63,10 +72,14 @@ struct NodeView: View {
                             }
                         }
                     }
+                    #if os(iOS)
+                    Button { showingCamera = true } label: { Label("Take photo", systemImage: "camera") }
+                        .disabled(attaching || !store.canWrite)
+                    #endif
                     PhotosPicker(selection: $pickerItem, matching: .images) {
-                        Label(uploading ? "Uploading…" : "Add photo", systemImage: "photo.badge.plus")
+                        Label(attaching ? "Adding…" : "Add from library", systemImage: "photo.badge.plus")
                     }
-                    .disabled(uploading || !store.canWrite)
+                    .disabled(attaching || !store.canWrite)
                 }
 
                 Section("Inside") {
@@ -101,6 +114,9 @@ struct NodeView: View {
             .onAppear { title = node.title }
             .onChange(of: pickerItem) { _, item in if let item { Task { await attach(item, to: node) } } }
             .sheet(isPresented: $creatingChild) { NewItemSheet(store: store, parentId: node.id) }
+            #if os(iOS)
+            .fullScreenCover(isPresented: $showingCamera) { AttachCameraSheet(store: store, nodeId: node.id) }
+            #endif
         } else {
             ContentUnavailableView("Not found", systemImage: "questionmark.folder")
         }
@@ -126,32 +142,14 @@ struct NodeView: View {
         await store.submit(.labelAdded(LabelPayload(label: l)), nodeId: node.id)
     }
 
-    /// The photo flow (DESIGN.md §3, §11): hash, read EXIF into the capture sidecar, make the
-    /// thumbnail and phone-sized derivatives here, upload all three, then record the event.
+    /// Library photos go through the same offline path as the camera: the event applies at once
+    /// and the bytes upload from the store's queue (DESIGN.md §3, §11).
     private func attach(_ item: PhotosPickerItem, to node: Node) async {
-        uploading = true
-        defer { uploading = false; pickerItem = nil }
+        attaching = true
+        defer { attaching = false; pickerItem = nil }
         guard let data = try? await item.loadTransferable(type: Data.self) else { store.lastError = "could not read photo"; return }
         let mime = item.supportedContentTypes.first?.preferredMIMEType ?? "image/jpeg"
-        let sha = ImageTools.sha256Hex(data)
-        let info = ImageTools.info(data)
-        do {
-            try await store.client.putBlob(spaceId: store.spaceId, sha256: sha, data: data, mime: mime)
-            if let thumb = ImageTools.derivative(data, maxPixel: 256) {
-                try await store.client.putBlob(spaceId: store.spaceId, sha256: sha, variant: "thumb", data: thumb, mime: "image/jpeg")
-            }
-            if let phone = ImageTools.derivative(data, maxPixel: 2048) {
-                try await store.client.putBlob(spaceId: store.spaceId, sha256: sha, variant: "phone", data: phone, mime: "image/jpeg")
-            }
-        } catch {
-            store.lastError = "upload failed: \(error.localizedDescription)"
-            return
-        }
-        let capture = CaptureSidecar(capturedAt: info?.capturedAt, gps: info?.gps)
-        let input = AttachmentInput(id: uuidv7(), kind: .image, mime: mime, filename: "\(sha.prefix(12)).jpg", byteSize: data.count,
-                                    sha256: sha, url: nil, width: info?.width, height: info?.height, durationMs: nil,
-                                    caption: "", sortKey: uuidv7(), capture: capture)
-        await store.submit(.attachmentAdded(AttachmentAddedPayload(attachment: input)), nodeId: node.id)
+        await store.attachPhoto(CapturedPhoto(data: data, mime: mime), to: node.id)
     }
 
     private func describe(_ ev: Event) -> String {
@@ -197,9 +195,27 @@ struct BlobImage: View {
                 Rectangle().fill(.quaternary).overlay(Image(systemName: "photo").foregroundStyle(.secondary))
             }
         }
-        .task(id: "\(sha256 ?? "")/\(variant ?? "")") {
-            guard let sha256, let data = await store.blob(sha256: sha256, variant: variant) else { return }
+        .task(id: "\(sha256 ?? "")/\(variant ?? "")/\(store.version)") {
+            guard image == nil, let sha256, let data = await store.blob(sha256: sha256, variant: variant) else { return }
             image = ImageTools.cgImage(data)
         }
     }
 }
+
+#if os(iOS)
+/// "Add photo to an existing item is the same camera from the item screen" (DESIGN.md §3).
+struct AttachCameraSheet: View {
+    let store: SpaceStore
+    let nodeId: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var shots: [CaptureSheet.Shot] = []
+
+    var body: some View {
+        CameraStage(shots: $shots, onCancel: { dismiss() }, onNext: {
+            let photos = shots.map(\.photo)
+            dismiss()
+            Task { for p in photos { await store.attachPhoto(p, to: nodeId) } }
+        })
+    }
+}
+#endif

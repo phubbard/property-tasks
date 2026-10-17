@@ -117,6 +117,54 @@ the background. Another member sees the item with placeholders until the
 bytes arrive, because the event carries the sha256, dimensions and caption
 without the bytes.
 
+### Built (iOS, 2026-10-17)
+
+The flow above is implemented in the SwiftUI app for iPhone and iPad as
+`CaptureSheet` (`apple/PropertyTasks/Views/Capture/`), opened from a
+Capture button pinned to the bottom of the Space view and, as "add photo
+to an existing item", from a Take photo button on the item page. macOS
+keeps the form-based New item sheet and the photo picker.
+
+- **Camera.** An `AVCaptureSession` (`CameraEngine`) that stays open so
+  several shots can be taken in a row; a thumbnail strip shows them and a
+  long press removes one. Devices without a camera, including the
+  Simulator, get a library picker in the same place. Shots are JPEG.
+- **Title.** One text field; dictation is the keyboard microphone, nothing
+  app-specific was needed. Done stays disabled until the title is non-empty.
+- **Where.** `PlaceMemory` keeps the last-used container and five recents
+  per Space in UserDefaults. `PlacePicker` lists recents, the Inbox and
+  every live container with its path, searchable. The Inbox is a root
+  container titled "Inbox" and is created by the first capture that needs
+  it (`SpaceStore.ensureInbox`), not at Space creation, so Spaces that
+  never need one never get one.
+- **Priority.** A chip row (low, normal, high, urgent) defaulting to normal.
+- **Done** runs `SpaceStore.createCapturedItem`: `node.created` for the
+  task, then one `attachment.added` per photo, all applied to the local
+  projection at once. Each photo is hashed and reduced to `thumb` (256 px)
+  and `phone` (2048 px) derivatives off the main actor; the original and
+  both derivatives are written under Application Support and appended to
+  the store's persisted `uploadQueue`. `flush()` pushes pending events
+  first and only then drains the queue, oldest first, stopping at the
+  first failure; `refresh()` drains it again, so the next pull-to-refresh
+  or app launch retries. The event therefore always precedes the bytes.
+- **Placeholders.** Thumbnails read the staged derivative from disk before
+  asking the Worker, so the item page and the list rows show the photo
+  immediately and carry a small upload badge until the bytes are accepted.
+  Other members see the grey placeholder until then, as specified.
+- **Sidecar** (§9). `CaptureSensors` samples CoreLocation (when-in-use
+  permission; denial leaves the fields nil), compass heading and CoreMotion
+  attitude while the viewfinder is open and freezes them at the shutter.
+  Camera intrinsics come from the photo's EXIF (focal length; sensor width
+  derived from the 35 mm equivalent) with image size. EXIF values fill
+  whatever the sensors did not provide, which is also how library photos
+  keep their date and GPS. ARKit transform, barometric altitude and depth
+  are still reserved fields.
+
+Deviations from the sketch above: Done is allowed with zero photos (the
+camera stage offers Skip) so a quick text-only task is still four taps;
+the item is always a task (places and notes still come from the New item
+sheet); and GPS-suggested location is not attempted, as stated.
+
 ## 4. Views and filters
 
 Tree view and list view are one query rendered twice, over one filter bar.

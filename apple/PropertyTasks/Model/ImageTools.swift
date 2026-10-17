@@ -12,11 +12,15 @@ enum ImageTools {
         SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
-    struct Info {
+    struct Info: Sendable {
         var width: Int
         var height: Int
         var capturedAt: Millis?
         var gps: CaptureSidecar.GPS?
+        /// EXIF FocalLength, in millimetres.
+        var focalLengthMm: Double?
+        /// Derived from FocalLenIn35mmFilm when present: 36 mm × focal / focal35.
+        var sensorWidthMm: Double?
     }
 
     static func info(_ data: Data) -> Info? {
@@ -25,12 +29,19 @@ enum ImageTools {
               let w = props[kCGImagePropertyPixelWidth] as? Int,
               let h = props[kCGImagePropertyPixelHeight] as? Int else { return nil }
         var info = Info(width: w, height: h)
-        if let exif = props[kCGImagePropertyExifDictionary] as? [CFString: Any],
-           let s = exif[kCGImagePropertyExifDateTimeOriginal] as? String {
-            let f = DateFormatter()
-            f.dateFormat = "yyyy:MM:dd HH:mm:ss"
-            f.timeZone = .current
-            if let d = f.date(from: s) { info.capturedAt = Millis(d.timeIntervalSince1970 * 1000) }
+        if let exif = props[kCGImagePropertyExifDictionary] as? [CFString: Any] {
+            if let s = exif[kCGImagePropertyExifDateTimeOriginal] as? String {
+                let f = DateFormatter()
+                f.dateFormat = "yyyy:MM:dd HH:mm:ss"
+                f.timeZone = .current
+                if let d = f.date(from: s) { info.capturedAt = Millis(d.timeIntervalSince1970 * 1000) }
+            }
+            if let focal = exif[kCGImagePropertyExifFocalLength] as? Double, focal > 0 {
+                info.focalLengthMm = focal
+                if let f35 = exif[kCGImagePropertyExifFocalLenIn35mmFilm] as? Double, f35 > 0 {
+                    info.sensorWidthMm = 36.0 * focal / f35
+                }
+            }
         }
         if let gps = props[kCGImagePropertyGPSDictionary] as? [CFString: Any],
            let lat = gps[kCGImagePropertyGPSLatitude] as? Double,

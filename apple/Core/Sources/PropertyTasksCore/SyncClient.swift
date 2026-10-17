@@ -1,19 +1,39 @@
 import Foundation
 
+/// The part of the Worker API a Space replica needs. `SyncClient` is the real
+/// one; tests substitute a recording fake so push/upload ordering and offline
+/// behaviour can be checked without a server.
+public protocol SyncTransport: Sendable {
+    func push(spaceId: String, events: [Event]) async throws -> SyncClient.PushResult
+    func pull(spaceId: String, since: Int, limit: Int) async throws -> SyncClient.PullResult
+    func putBlob(spaceId: String, sha256: String, variant: String?, data: Data, mime: String) async throws
+    func getBlob(spaceId: String, sha256: String, variant: String?) async throws -> Data
+}
+
+public extension SyncTransport {
+    func pull(spaceId: String, since: Int) async throws -> SyncClient.PullResult {
+        try await pull(spaceId: spaceId, since: since, limit: 500)
+    }
+}
+
 /// The Worker's JSON API (DESIGN.md §11). Ephemeral session, one host, no
 /// third-party calls, as in Serpentine. Authentication is a bearer token
 /// once real sessions exist; today the dev stub accepts `X-Dev-User`.
-public actor SyncClient {
+public actor SyncClient: SyncTransport {
     public struct PushResult: Decodable, Sendable {
         public var ok: Bool
         public var seqs: [String: Int]?
         public var error: String?
         public var eventId: String?
+        public init(ok: Bool, seqs: [String: Int]? = nil, error: String? = nil, eventId: String? = nil) {
+            self.ok = ok; self.seqs = seqs; self.error = error; self.eventId = eventId
+        }
     }
     public struct PullResult: Decodable, Sendable {
         public var events: [Event]
         public var nextSeq: Int
         public var hasMore: Bool
+        public init(events: [Event], nextSeq: Int, hasMore: Bool) { self.events = events; self.nextSeq = nextSeq; self.hasMore = hasMore }
     }
     public struct Snapshot: Decodable, Sendable {
         public var spaceId: String

@@ -8,6 +8,7 @@ struct SpaceView: View {
     @State private var filter = Filter()
     @State private var search = ""
     @State private var creating = false
+    @State private var capturing = false
 
     private var now: Millis { Millis(Date().timeIntervalSince1970 * 1000) }
 
@@ -47,6 +48,24 @@ struct SpaceView: View {
                 ToolbarItem { Button("New item", systemImage: "plus") { creating = true }.disabled(!store.canWrite) }
             }
             .sheet(isPresented: $creating) { NewItemSheet(store: store, parentId: nil) }
+            #if os(iOS)
+            .fullScreenCover(isPresented: $capturing) { CaptureSheet(store: store) }
+            .safeAreaInset(edge: .bottom) {
+                // The headline action (DESIGN.md §3): camera first, big enough to hit one-handed.
+                Button { capturing = true } label: {
+                    Label("Capture", systemImage: "camera.fill")
+                        .font(.headline)
+                        .padding(.horizontal, 24).padding(.vertical, 14)
+                        .background(Color.accentColor, in: Capsule())
+                        .foregroundStyle(.white)
+                        .shadow(radius: 4, y: 2)
+                }
+                .disabled(!store.canWrite)
+                .opacity(store.canWrite ? 1 : 0.4)
+                .padding(.bottom, 8)
+                .accessibilityHint("Take photos and create a new item")
+            }
+            #endif
             .overlay(alignment: .bottom) {
                 if let e = store.lastError {
                     Text(e).font(.caption).padding(8).background(.red.opacity(0.85)).foregroundStyle(.white)
@@ -64,6 +83,7 @@ struct NodeRow: View {
     let path: String?
 
     var body: some View {
+        let photos = store.store.getAttachmentsForNode(node.id).filter { $0.removedAt == nil && $0.kind == .image }.sorted { $0.sortKey < $1.sortKey }
         HStack(spacing: 8) {
             Image(systemName: icon).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 2) {
@@ -72,8 +92,18 @@ struct NodeRow: View {
                 if let path, !path.isEmpty { Text(path).font(.caption).foregroundStyle(.secondary) }
             }
             Spacer()
-            let photos = store.store.getAttachmentsForNode(node.id).filter { $0.removedAt == nil && $0.kind == .image }.count
-            if photos > 0 { Label("\(photos)", systemImage: "photo").font(.caption).labelStyle(.titleAndIcon).foregroundStyle(.secondary) }
+            if let first = photos.first {
+                // Local derivative while the upload is pending, the Worker's thumb afterwards.
+                BlobImage(store: store, sha256: first.sha256, variant: "thumb")
+                    .frame(width: 36, height: 36).clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(alignment: .bottomTrailing) {
+                        if store.isUploadPending(sha256: first.sha256) {
+                            Image(systemName: "icloud.and.arrow.up").font(.system(size: 8)).padding(2)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                    }
+                if photos.count > 1 { Text("+\(photos.count - 1)").font(.caption).foregroundStyle(.secondary) }
+            }
             if node.kind == .container {
                 let open = store.store.getChildren(node.id).filter { $0.kind == .task && $0.archivedAt == nil && ($0.status == .open || $0.status == .in_progress || $0.status == .blocked) }.count
                 if open > 0 { Text("\(open)").font(.caption).monospacedDigit().padding(.horizontal, 6).background(.quaternary).clipShape(Capsule()) }
