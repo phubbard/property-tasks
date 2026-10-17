@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS events (
   type TEXT NOT NULL,
   payload TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS events_node ON events(node_id, seq);
 CREATE TABLE IF NOT EXISTS nodes (
   id TEXT PRIMARY KEY, parent_id TEXT, kind TEXT NOT NULL, title TEXT NOT NULL, status TEXT,
   priority TEXT NOT NULL, due_at INTEGER, assignee_id TEXT, body TEXT, sort_key TEXT NOT NULL,

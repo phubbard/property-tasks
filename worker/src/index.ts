@@ -1,6 +1,8 @@
-import { uuidv7, type Event } from "@property-tasks/shared";
+import type { Event } from "@property-tasks/shared";
 import { authenticate, type User } from "./auth.js";
 import { getBlob, putBlob, validBlobPath } from "./blobs.js";
+import { createSpace, listSpaces } from "./spaces.js";
+import { isWebPath, webRoute } from "./web.js";
 
 export { SpaceDO } from "./space-do.js";
 
@@ -13,15 +15,18 @@ function log(level: "info" | "warn" | "error", message: string, data?: Record<st
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
-    if (!url.pathname.startsWith("/api/")) {
+    const isApi = url.pathname.startsWith("/api/");
+    if (!isApi && !isWebPath(url.pathname)) {
       // Static assets are served before the Worker runs; anything left is a 404 from the assets binding.
       return env.ASSETS.fetch(request);
     }
     try {
-      return await route(request, env, url);
+      return isApi ? await route(request, env, url) : await webRoute(request, env, url);
     } catch (e) {
       log("error", "request failed", { path: url.pathname, method: request.method, error: String(e) });
-      return json({ error: "internal error" }, 500);
+      return isApi
+        ? json({ error: "internal error" }, 500)
+        : new Response("Something went wrong.", { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } });
     }
   },
 } satisfies ExportedHandler<Env>;
@@ -37,8 +42,12 @@ async function route(request: Request, env: Env, url: URL): Promise<Response> {
 
   // /api/spaces
   if (parts.length === 2) {
-    if (request.method === "POST") return createSpace(request, env, user);
-    if (request.method === "GET") return listSpaces(env, user);
+    if (request.method === "POST") {
+      const body = (await request.json().catch(() => ({}))) as { title?: unknown };
+      const created = await createSpace(env, user, body.title);
+      return created ? json(created, 201) : json({ error: "space id collision" }, 500);
+    }
+    if (request.method === "GET") return json({ spaces: await listSpaces(env, user) });
     return json({ error: "method not allowed" }, 405);
   }
 
@@ -98,25 +107,4 @@ function isEventShaped(e: unknown): e is Event {
   return typeof o.id === "string" && typeof o.spaceId === "string" && typeof o.actorId === "string"
     && typeof o.deviceId === "string" && typeof o.at === "number" && typeof o.type === "string"
     && typeof o.payload === "object" && o.payload !== null && (o.nodeId === null || typeof o.nodeId === "string");
-}
-
-async function createSpace(request: Request, env: Env, user: User): Promise<Response> {
-  const body = (await request.json().catch(() => ({}))) as { title?: unknown };
-  const title = typeof body.title === "string" && body.title.trim() ? body.title.trim() : "Untitled space";
-  const spaceId = uuidv7();
-  const now = Date.now();
-  const stub = env.SPACES.getByName(spaceId);
-  const { created } = await stub.init(spaceId, { userId: user.id, displayName: user.displayName }, now);
-  if (!created) return json({ error: "space id collision" }, 500);
-  await env.IDENTITY.prepare(
-    "INSERT INTO memberships (user_id, space_id, role, title, joined_at) VALUES (?, ?, 'owner', ?, ?)",
-  ).bind(user.id, spaceId, title, now).run();
-  return json({ id: spaceId, title }, 201);
-}
-
-async function listSpaces(env: Env, user: User): Promise<Response> {
-  const { results } = await env.IDENTITY.prepare(
-    "SELECT space_id AS id, role, title, joined_at AS joinedAt FROM memberships WHERE user_id = ? ORDER BY joined_at",
-  ).bind(user.id).all();
-  return json({ spaces: results });
 }

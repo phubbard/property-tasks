@@ -32,6 +32,32 @@ npx wrangler d1 migrations apply property-tasks-identity --local   # once
 npm run dev                                                         # http://localhost:8787
 ```
 
+## Web app
+
+The Worker renders HTML pages from the same Durable Object (DESIGN.md §7a):
+template literals in `worker/src/html.ts` and `pages.ts`, routes in
+`worker/src/web.ts`, no client framework. `web/public/` holds the stylesheet,
+manifest and the service worker (`sw.js`: shell cached on install, recently
+viewed pages served from cache when offline; writes are online-only).
+
+| Route | Page |
+|-------|------|
+| `GET /` | the signed-in user's Spaces, with a form to create one |
+| `GET /s/:spaceId` | tree view; non-matching ancestors of a hit stay visible but dimmed |
+| `GET /s/:spaceId/list` | flat list with breadcrumb paths, sorted |
+| `GET /s/:spaceId/n/:nodeId` | one node: fields, labels, attachments, children, history newest first |
+| `POST /s/:spaceId/nodes` | create a node (`parent`, `title`, `kind`, `priority`) |
+| `POST /s/:spaceId/n/:nodeId/{status,priority,label,archive,restore}` | one event each, then a 303 back to the node |
+
+Tree and list take the same query parameters, which the filter bar mirrors so
+every view is a shareable URL: `status` (repeatable; `any` for all), `priority`
+(exact set), `priorityMin`, `kind`, `label`, `under` (container id), `ageMax`
+and `stale` (days), `who` with `whoRole=touched|created|assigned`, `has`
+(`photos`, `documents`, `due`, `children`), `due` (`overdue|week|month`),
+`text`, `archived=1`, and on the list `sort`
+(`priority|created|lastActivity|due|tree`). Example:
+`/s/<id>/list?under=<houseId>&priorityMin=high&stale=30&sort=lastActivity`.
+
 ## API round-trip
 
 Auth is a dev stub: with `DEV_USER` set in `wrangler.jsonc` every request is
@@ -77,6 +103,10 @@ every batch committed by another device.
 - `worker/test/space.test.ts`: push/pull round-trip, idempotent retry,
   snapshot equals replay, atomic rejection, membership refusal, blob upload
   with sha verification. Runs inside workerd via `@cloudflare/vitest-plugin`.
+- `worker/test/pages.test.ts`: the HTML pages over a seeded Space: tree rows
+  with depth and dimming, list breadcrumbs, filter parameters, the node page,
+  form posts that append events and redirect, 403 for non-members and
+  viewers, and a size budget on the tree page.
 
 ## Deploy
 

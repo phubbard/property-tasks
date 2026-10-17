@@ -38,10 +38,11 @@ describe("health and auth", () => {
     const res = await SELF.fetch(`${BASE}/api/health`);
     expect(await res.json()).toEqual({ ok: true });
   });
-  it("static asset placeholder is served", async () => {
+  it("the root is the server-rendered Spaces page", async () => {
     const res = await SELF.fetch(`${BASE}/`);
     expect(res.status).toBe(200);
-    expect(await res.text()).toContain("Property Tasks");
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(await res.text()).toContain("<h1>Spaces</h1>");
   });
 });
 

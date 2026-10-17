@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import {
   ProjectionError, applyEvent, serialize, uuidv7,
-  type Event, type Member, type Serialized, type StampedEvent,
+  type Event, type Member, type Node, type Serialized, type StampedEvent,
 } from "@property-tasks/shared";
 import { SCHEMA, SqlStore } from "./sql-store.js";
 
@@ -124,6 +124,19 @@ export class SpaceDO extends DurableObject<Env> {
     const page = rows.slice(0, limit).map((r) => rowToEvent(r, spaceId));
     const last = page[page.length - 1];
     return { events: page, nextSeq: last ? last.seq : sinceSeq, hasMore };
+  }
+
+  async getNode(nodeId: string): Promise<Node | null> {
+    return this.store.getNode(nodeId) ?? null;
+  }
+
+  /** History of one node, newest first. Feeds the node page (DESIGN.md §5: order by receipt, show `at`). */
+  async nodeEvents(nodeId: string, limit = 100): Promise<StampedEvent[]> {
+    const spaceId = this.meta("spaceId") ?? "";
+    return this.ctx.storage.sql
+      .exec<EventRow>("SELECT * FROM events WHERE node_id = ? ORDER BY seq DESC LIMIT ?", nodeId, limit)
+      .toArray()
+      .map((r) => rowToEvent(r, spaceId));
   }
 
   async snapshot(): Promise<Snapshot> {
