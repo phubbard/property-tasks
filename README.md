@@ -20,8 +20,8 @@ nothing quite like it, and `apple/CHANGELOG.md` for the app.
 
 - **Event-sourced.** An append-only log of small, attributed events is the
   source of truth; node tables are projections. One `applyEvent` in
-  TypeScript runs in the browser-less web tier and in the Durable Object, and
-  a Swift port is held to the same JSON fixtures, so clients cannot drift.
+  TypeScript runs inside the Durable Object and in tests, and a Swift port is
+  held to the same JSON fixtures, so clients cannot drift.
 - **Cloudflare.** One Worker serves the web pages, the JSON API and
   WebSockets. One SQLite-backed Durable Object per Space holds its log and
   projection. R2 holds content-addressed photos with client-made thumbnails.
