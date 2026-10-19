@@ -1,9 +1,38 @@
 # property-tasks
 
-Shared, hierarchical tracking of property tasks with photos and an attributed
-audit log. Web first, then SwiftUI for iPhone, iPad and Mac. Read
-[DESIGN.md](DESIGN.md) for the model and architecture and
-[RESEARCH.md](RESEARCH.md) for the prior-art survey.
+Shared, hierarchical tracking of the things a property needs done: notice the
+bathroom AC has failed, photograph it, file it under cabin › main house ›
+bathroom, break it into subtasks, and see who did what and when. Any item can
+hold children, every change is an attributed event, and a household shares one
+Space across iPhone, iPad, Mac and the web.
+
+The model is generic on purpose. "Location", "Building" and "Repair" are
+labels from a vocabulary pack, not schema, so the same app can track a boat,
+a fleet of vehicles or a club's equipment.
+
+**Status (October 2026): early, usable by its author, not yet by anyone
+else.** Sign-in is a development stub, so nothing here should be deployed
+where strangers can reach it. See [DESIGN.md](DESIGN.md) for the model and
+architecture, [RESEARCH.md](RESEARCH.md) for the prior-art survey that found
+nothing quite like it, and `apple/CHANGELOG.md` for the app.
+
+## How it works
+
+- **Event-sourced.** An append-only log of small, attributed events is the
+  source of truth; node tables are projections. One `applyEvent` in
+  TypeScript runs in the browser-less web tier and in the Durable Object, and
+  a Swift port is held to the same JSON fixtures, so clients cannot drift.
+- **Cloudflare.** One Worker serves the web pages, the JSON API and
+  WebSockets. One SQLite-backed Durable Object per Space holds its log and
+  projection. R2 holds content-addressed photos with client-made thumbnails.
+  D1 holds identity.
+- **Web is small pages, minimal JS, installable.** The Worker renders HTML;
+  filters are query parameters so every view is a shareable URL; a service
+  worker caches the shell.
+- **Native app is offline-first.** A JSON-cached replica queues events and
+  photo uploads, and reconciles on pull. Capture is camera first: shoot,
+  title, place, priority, done, with GPS, heading and attitude recorded in a
+  sidecar for later.
 
 ## Layout
 
